@@ -1,0 +1,42 @@
+name: CI/CD - Deploy Demo CRM
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Log in to Docker Hub
+      run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+    - name: Pull base image
+      run: docker pull pwstaging/demo-crm:latest
+
+    - name: Retag image
+      run: docker tag pwstaging/demo-crm:latest ${{ secrets.DOCKERHUB_USERNAME }}/demo-crm:latest
+
+    - name: Push image to Docker Hub
+      run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/demo-crm:latest
+
+    - name: Set up kubeconfig
+      run: echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > kubeconfig
+
+    - name: Replace image placeholder in manifest
+      run: |
+        sed -i "s|IMAGE_PLACEHOLDER|${{ secrets.DOCKERHUB_USERNAME }}/demo-crm:latest|" k8s/deployment.yaml
+
+    - name: Apply deployment to Kubernetes
+      run: kubectl --kubeconfig=kubeconfig apply -f k8s/deployment.yaml
+
+    - name: Verify deployment
+      run: kubectl --kubeconfig=kubeconfig get pods -l app=demo-crm
+
+    - name: Provide access instructions
+      run: echo "Use: kubectl --kubeconfig=kubeconfig port-forward deployment/demo-crm 3000:3000"
