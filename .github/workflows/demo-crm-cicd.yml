@@ -55,8 +55,6 @@ jobs:
         docker push $IMAGE
         docker push $IMAGE_LATEST
 
-        echo "Images pushed successfully"
-
     - name: Setup kubectl
       uses: azure/setup-kubectl@v3
       with:
@@ -69,10 +67,8 @@ jobs:
 
     - name: Verify Killercoda connection
       run: |
-        echo "=== Connecting to Killercoda cluster ==="
         kubectl cluster-info
         kubectl get nodes
-        echo "Connected to Killercoda successfully"
 
     - name: Prepare deployment manifest
       run: |
@@ -80,38 +76,21 @@ jobs:
         OWNER="${{ steps.owner.outputs.owner }}"
         IMAGE="${{ env.REGISTRY }}/${OWNER}/${{ env.IMAGE_NAME }}:${TAG}"
 
-        echo "Updating deployment with image: ${IMAGE}"
         sed -i "s|IMAGE_PLACEHOLDER|${IMAGE}|g" k8s/deployment.yaml
-
-        echo "=== Updated Deployment Manifest ==="
         cat k8s/deployment.yaml
 
     - name: Deploy Demo CRM Application
       run: |
-        echo "=== Deploying Demo CRM ==="
-
         kubectl apply -f k8s/deployment.yaml
-
-        echo "Waiting for Demo CRM deployment..."
         kubectl wait --for=condition=available deployment/demo-crm --timeout=300s
-
-        echo "Demo CRM deployed successfully"
 
     - name: Verify deployment
       run: |
-        echo "=== Deployment Verification ==="
-
         kubectl get all
-        echo ""
-
-        echo "=== Pod Status ==="
         kubectl get pods -l app=demo-crm
-        echo ""
 
-        echo "=== Testing Application ==="
         kubectl port-forward deployment/demo-crm 3000:3000 &
         PORT_FORWARD_PID=$!
-
         sleep 15
 
         if curl -f http://localhost:3000/; then
@@ -126,25 +105,5 @@ jobs:
 
     - name: Display access information
       run: |
-        echo "=== Deployment Complete ==="
-        echo ""
-        echo "Your Demo CRM application is now running in Killercoda!"
-        echo ""
-        echo "Resource Status:"
-        kubectl get pods,deployments -l app=demo-crm
-        echo ""
-        echo "Access Instructions:"
-        echo "1. Run the following command in your Killercoda terminal:"
-        echo "   kubectl port-forward --address 0.0.0.0 deployment/demo-crm 3000:3000"
-        echo ""
-        echo "2. Use Killercoda Traffic Port Accessor:"
-        echo "   - Click three bars (☰) in top-right corner"
-        echo "   - Select 'Ports'"
-        echo "   - Enter '3000' in Custom Ports"
-        echo "   - Click 'Access'"
-        echo ""
-        echo "3. You should see the Demo CRM interface with two customer cards"
-        echo ""
-        echo "Deployed Image: ${{ env.REGISTRY }}/${{ steps.owner.outputs.owner }}/${{ env.IMAGE_NAME }}:${{ steps.generate-tag.outputs.tag }}"
-        echo ""
-        echo "Session Info: This deployment is active for the duration of your Killercoda session"
+        echo "Demo CRM is running!"
+        echo "kubectl get pods,deployments -l app=demo-crm"
