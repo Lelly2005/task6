@@ -1,4 +1,4 @@
-name: Demo CRM CI/CD to Killercoda
+ name: Demo CRM CI/CD to Killercoda
 
 on:
   push:
