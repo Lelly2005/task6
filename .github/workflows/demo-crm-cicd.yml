@@ -30,7 +30,7 @@ jobs:
       with:
         registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
-        password: ${{ secrets.MY_GHCR }}
+        password: ${{ secrets.GHRC_TOKEN }}
         
     - name: Pull, retag and push Demo CRM image
       run: |
